@@ -91,7 +91,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          
+
       - name: Upload deployment configuration
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -150,11 +150,10 @@ jobs:
             echo "Waiting for application readiness..."
 
             for i in {1..30}; do
-              if curl -fsS --connect-timeout 2 \
-                http://localhost/api/v1/version > /tmp/version.json; then
+              if curl -kfsS --connect-timeout 2 \
+                https://localhost/api/v1/version > /tmp/version.json; then
                 break
               fi
-
               sleep 2
             done
 
@@ -162,7 +161,6 @@ jobs:
             cat /tmp/version.json
 
             test -s /tmp/version.json
-
             grep -q "\"version\":\"$VERSION\"" /tmp/version.json
 
             echo "Deployment verified successfully"
