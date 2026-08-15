@@ -91,6 +91,15 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          
+      - name: Upload deployment configuration
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.ORACLE_HOST }}
+          username: ${{ vars.ORACLE_USER }}
+          key: ${{ secrets.ORACLE_SSH_PRIVATE_KEY }}
+          source: "deploy/compose.yaml"
+          target: "/opt/shopping-assistant-fe"
 
   deploy:
     name: Deploy to FE VM
@@ -98,6 +107,9 @@ jobs:
     needs: docker
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Deploy
         uses: appleboy/ssh-action@v1.2.2
         with:
