@@ -1,5 +1,4 @@
 import { ShoppingBag } from 'lucide-react';
-import { Button } from '../ui/Button';
 
 export function EmptyBasket() {
   return (

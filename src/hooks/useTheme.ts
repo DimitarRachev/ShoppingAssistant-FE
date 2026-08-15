@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { storage } from '../lib/storage';
 
 export function useTheme() {
-  const [theme, setThemeState] = useState<'light' | 'dark'>(() => storage.getTheme());
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
+    const initialTheme = storage.getTheme();
+    return initialTheme;
+  });
 
   useEffect(() => {
     storage.setTheme(theme);
