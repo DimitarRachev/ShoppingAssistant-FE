@@ -1,0 +1,7 @@
+services:
+  shopping-assistant-fe:
+    image: ghcr.io/dimitarrachev/shopping-assistant-fe:${APP_VERSION}
+    container_name: shopping-assistant-fe
+    restart: unless-stopped
+    ports:
+      - "80:80"
