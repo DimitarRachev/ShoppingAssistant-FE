@@ -163,10 +163,11 @@ jobs:
             test -s /tmp/version.json
 
             echo "Verifying deployed FE image..."
+
             RUNNING_IMAGE=$(docker inspect shopping-assistant-fe \
               --format '{{.Config.Image}}')
 
-            EXPECTED_IMAGE="ghcr.io/${{ github.repository_owner }}/shopping-assistant-fe:$VERSION"
+            EXPECTED_IMAGE="ghcr.io/dimitarrachev/shopping-assistant-fe:$VERSION"
 
             echo "Expected image: $EXPECTED_IMAGE"
             echo "Running image:  $RUNNING_IMAGE"
