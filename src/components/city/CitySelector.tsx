@@ -79,15 +79,15 @@ export function CitySelector() {
           {city ? city.nameBg : 'Изберете град'}
         </span>
         {city && (
-          <button
+          <div
             onClick={(e) => {
               e.stopPropagation();
               handleClearCity();
             }}
-            className="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            className="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
           >
             <X className="h-4 w-4" />
-          </button>
+          </div>
         )}
         {!city && <ChevronDown className="h-4 w-4 ml-auto text-gray-400" />}
       </button>
