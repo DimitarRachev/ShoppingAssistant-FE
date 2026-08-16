@@ -1,7 +1,7 @@
 import { CitySelector } from '../components/city/CitySelector';
 import { ProductSearch } from '../components/products/ProductSearch';
 import { Basket } from '../components/basket/Basket';
-import { useCity } from '../hooks/useCity';
+import { useCity } from '../contexts/CityContext';
 import { useBasket } from '../hooks/useBasket';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';

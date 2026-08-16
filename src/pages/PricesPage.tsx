@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useCity } from '../hooks/useCity';
+import { useCity } from '../contexts/CityContext';
 import { useBasket } from '../hooks/useBasket';
 import { useBasketCompare } from '../hooks/useBasketCompare';
 import { useBasketOptimize } from '../hooks/useBasketOptimize';
@@ -8,6 +8,7 @@ import { Button } from '../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { formatPrice } from '../lib/currency';
 import { Store, TrendingUp, AlertCircle, ArrowLeft, RotateCcw } from 'lucide-react';
+import { useProducts } from '../hooks/useProducts';
 
 export function PricesPage() {
   const { city } = useCity();
@@ -15,9 +16,16 @@ export function PricesPage() {
   const navigate = useNavigate();
   const [maxStores, setMaxStores] = useState(2);
   const [hasResults, setHasResults] = useState(false);
-  
+  const { data: products } = useProducts();
+
   const compareMutation = useBasketCompare();
   const optimizeMutation = useBasketOptimize();
+
+  // Helper function to get product name by ID
+  const getProductName = (productId: number) => {
+    const product = products?.find(p => p.id === productId);
+    return product?.nameBg || `Продукт #${productId}`;
+  };
 
   // Set hasResults when mutations complete
   useEffect(() => {
@@ -219,6 +227,26 @@ export function PricesPage() {
                 </p>
               </div>
             </div>
+            <div className="space-y-2">
+              {compareData.cheapestSingleStore.items.map((item, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between text-sm py-2 border-t border-gray-100 dark:border-gray-800"
+                >
+                  <div className="flex-1">
+                    <p className="text-gray-900 dark:text-white font-medium">
+                      {getProductName(item.productId)}
+                    </p>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs">
+                      {item.quantity} x {formatPrice(item.unitPrice)}
+                    </p>
+                  </div>
+                  <span className="text-gray-900 dark:text-white font-semibold">
+                    {formatPrice(item.totalPrice)}
+                  </span>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -241,7 +269,7 @@ export function PricesPage() {
                 key={index}
                 className="border border-gray-200 rounded-lg p-4 dark:border-gray-700"
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-3">
                   <h4 className="font-medium text-gray-900 dark:text-white">
                     {storeWithItems.store.nameBg}
                   </h4>
@@ -249,9 +277,26 @@ export function PricesPage() {
                     {formatPrice(storeWithItems.total)}
                   </span>
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {storeWithItems.items.length} продукта
-                </p>
+                <div className="space-y-2">
+                  {storeWithItems.items.map((item, itemIndex) => (
+                    <div
+                      key={itemIndex}
+                      className="flex items-center justify-between text-sm py-2 border-b border-gray-100 dark:border-gray-800 last:border-0"
+                    >
+                      <div className="flex-1">
+                        <p className="text-gray-900 dark:text-white font-medium">
+                          {getProductName(item.productId)}
+                        </p>
+                        <p className="text-gray-500 dark:text-gray-400 text-xs">
+                          {item.quantity} x {formatPrice(item.unitPrice)}
+                        </p>
+                      </div>
+                      <span className="text-gray-900 dark:text-white font-semibold">
+                        {formatPrice(item.totalPrice)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
 

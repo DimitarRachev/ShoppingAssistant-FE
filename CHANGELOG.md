@@ -1,0 +1,1 @@
+0.1.1 Add detailed prices in comparison

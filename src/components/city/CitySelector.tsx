@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MapPin, ChevronDown, X } from 'lucide-react';
 import { useCities } from '../../hooks/useCities';
-import { useCity } from '../../hooks/useCity';
+import { useCity } from '../../contexts/CityContext';
 import { Input } from '../ui/Input';
 import { cn } from '../../lib/utils';
 import type { City } from '../../api/types';
