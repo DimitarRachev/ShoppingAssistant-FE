@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useCity } from '../contexts/CityContext';
 import { useBasket } from '../hooks/useBasket';
 import { useBasketCompare } from '../hooks/useBasketCompare';
 import { useBasketOptimize } from '../hooks/useBasketOptimize';
+import { useCities } from '../hooks/useCities';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { formatPrice } from '../lib/currency';
-import { Store, TrendingUp, AlertCircle, ArrowLeft, RotateCcw } from 'lucide-react';
+import { Store, TrendingUp, AlertCircle, ArrowLeft, RotateCcw, ArrowRightLeft } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
+import type { City } from '../api/types';
 
 export function PricesPage() {
   const { city } = useCity();
@@ -16,10 +18,17 @@ export function PricesPage() {
   const navigate = useNavigate();
   const [maxStores, setMaxStores] = useState(2);
   const [hasResults, setHasResults] = useState(false);
+  const [comparisonCity, setComparisonCity] = useState<City | null>(null);
   const { data: products } = useProducts();
+  const { data: cities } = useCities();
+
+  // Track which city we've already made a request for
+  const requestedCityRef = useRef<number | null>(null);
 
   const compareMutation = useBasketCompare();
   const optimizeMutation = useBasketOptimize();
+  const compareCityMutation = useBasketCompare();
+  const optimizeCityMutation = useBasketOptimize();
 
   // Helper function to get product name by ID
   const getProductName = (productId: number) => {
@@ -55,6 +64,10 @@ export function PricesPage() {
     setHasResults(false);
     compareMutation.reset();
     optimizeMutation.reset();
+    setComparisonCity(null);
+    compareCityMutation.reset();
+    optimizeCityMutation.reset();
+    requestedCityRef.current = null;
   };
 
   const isLoading = compareMutation.isPending || optimizeMutation.isPending;
@@ -62,6 +75,36 @@ export function PricesPage() {
   const optimizeData = optimizeMutation.data;
   const compareError = compareMutation.error;
   const optimizeError = optimizeMutation.error;
+
+  const isComparisonLoading = compareCityMutation.isPending || optimizeCityMutation.isPending;
+  const compareCityData = compareCityMutation.data;
+  const optimizeCityData = optimizeCityMutation.data;
+  const compareCityError = compareCityMutation.error;
+  const optimizeCityError = optimizeCityMutation.error;
+
+  // Auto-compare when city is selected
+  useEffect(() => {
+    if (comparisonCity && (compareData || optimizeData)) {
+      // Only trigger if we haven't already made a request for this city
+      if (requestedCityRef.current !== comparisonCity.id) {
+        requestedCityRef.current = comparisonCity.id;
+
+        // Use the same type of comparison as the main city
+        if (optimizeData) {
+          optimizeCityMutation.mutate({
+            cityId: comparisonCity.id,
+            maxStores,
+            items: basket,
+          });
+        } else if (compareData) {
+          compareCityMutation.mutate({
+            cityId: comparisonCity.id,
+            items: basket,
+          });
+        }
+      }
+    }
+  }, [comparisonCity, compareData, optimizeData, basket, maxStores, optimizeCityMutation, compareCityMutation]);
 
   if (!city) {
     return (
@@ -330,6 +373,181 @@ export function PricesPage() {
             <p className="text-center text-gray-600 dark:text-gray-400">
               Няма по-изгоден вариант от няколко магазина за вашата кошница.
             </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {(compareData || optimizeData) && (
+        <Card className="border-blue-200 dark:border-blue-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-600">
+              <ArrowRightLeft className="h-5 w-5" />
+              Сравни с град
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-4">
+              <select
+                value={comparisonCity?.id || ''}
+                onChange={(e) => {
+                  const selectedCity = cities?.find(c => c.id === Number(e.target.value));
+                  setComparisonCity(selectedCity || null);
+                }}
+                className="flex-1 h-12 px-4 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+              >
+                <option value="">Изберете град за сравнение</option>
+                {cities?.filter(c => c.id !== city?.id).map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nameBg}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {isComparisonLoading && (
+              <div className="text-center text-gray-600 dark:text-gray-400">
+                Търсим цени за {comparisonCity?.nameBg}...
+              </div>
+            )}
+
+            {(compareCityError || optimizeCityError) && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 dark:bg-red-900/20 dark:border-red-800">
+                <p className="text-sm text-red-700 dark:text-red-300">
+                  {(compareCityError as Error)?.message || (optimizeCityError as Error)?.message || 'Възникна грешка при сравнението.'}
+                </p>
+              </div>
+            )}
+
+            {compareCityData && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  Резултати за {comparisonCity?.nameBg}
+                </h3>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Store className="h-5 w-5 text-blue-600" />
+                      Най-изгоден един магазин
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          {compareCityData.cheapestSingleStore.store.nameBg}
+                        </h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {getTotalItems()} продукта
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-blue-600">
+                          {formatPrice(compareCityData.cheapestSingleStore.total)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {compareCityData.cheapestSingleStore.items.map((item, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between text-sm py-2 border-t border-gray-100 dark:border-gray-800"
+                        >
+                          <div className="flex-1">
+                            <p className="text-gray-900 dark:text-white font-medium">
+                              {getProductName(item.productId)}
+                            </p>
+                            <p className="text-gray-500 dark:text-gray-400 text-xs">
+                              {item.quantity} x {formatPrice(item.unitPrice)}
+                            </p>
+                          </div>
+                          <span className="text-gray-900 dark:text-white font-semibold">
+                            {formatPrice(item.totalPrice)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {optimizeCityData && optimizeCityData.optimizedBasket.savings > 0 && (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  Оптимизирано за {comparisonCity?.nameBg}
+                </h3>
+                <Card className="border-blue-200 dark:border-blue-800">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-blue-600">
+                      <TrendingUp className="h-5 w-5" />
+                      Спестете {formatPrice(optimizeCityData.optimizedBasket.savings)}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Ако пазарувате от {optimizeCityData.optimizedBasket.stores.length} магазина
+                    </p>
+
+                    {optimizeCityData.optimizedBasket.stores.map((storeWithItems, index) => (
+                      <div
+                        key={index}
+                        className="border border-gray-200 rounded-lg p-4 dark:border-gray-700"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium text-gray-900 dark:text-white">
+                            {storeWithItems.store.nameBg}
+                          </h4>
+                          <span className="font-semibold text-blue-600">
+                            {formatPrice(storeWithItems.total)}
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {storeWithItems.items.map((item, itemIndex) => (
+                            <div
+                              key={itemIndex}
+                              className="flex items-center justify-between text-sm py-2 border-b border-gray-100 dark:border-gray-800 last:border-0"
+                            >
+                              <div className="flex-1">
+                                <p className="text-gray-900 dark:text-white font-medium">
+                                  {getProductName(item.productId)}
+                                </p>
+                                <p className="text-gray-500 dark:text-gray-400 text-xs">
+                                  {item.quantity} x {formatPrice(item.unitPrice)}
+                                </p>
+                              </div>
+                              <span className="text-gray-900 dark:text-white font-semibold">
+                                {formatPrice(item.totalPrice)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Общо</span>
+                        <span className="text-xl font-bold text-gray-900 dark:text-white">
+                          {formatPrice(optimizeCityData.optimizedBasket.total)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-gray-600 dark:text-gray-400">Само един магазин</span>
+                        <span className="text-gray-900 dark:text-white">
+                          {formatPrice(optimizeCityData.cheapestSingleStore.total)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="font-semibold text-blue-600">Спестявате</span>
+                        <span className="text-xl font-bold text-blue-600">
+                          {formatPrice(optimizeCityData.optimizedBasket.savings)}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
