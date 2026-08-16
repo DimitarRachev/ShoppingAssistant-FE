@@ -161,7 +161,19 @@ jobs:
             cat /tmp/version.json
 
             test -s /tmp/version.json
-            grep -q "\"version\":\"$VERSION\"" /tmp/version.json
+
+            echo "Verifying deployed FE image..."
+            RUNNING_IMAGE=$(docker inspect shopping-assistant-fe \
+              --format '{{.Config.Image}}')
+
+            EXPECTED_IMAGE="ghcr.io/${{ github.repository_owner }}/shopping-assistant-fe:$VERSION"
+
+            echo "Expected image: $EXPECTED_IMAGE"
+            echo "Running image:  $RUNNING_IMAGE"
+
+            test "$RUNNING_IMAGE" = "$EXPECTED_IMAGE"
 
             echo "Deployment verified successfully"
-            echo "Version: $VERSION"
+            echo "FE version: $VERSION"
+            echo "BE version:"
+            grep -o '"version":"[^"]*"' /tmp/version.json | head -1

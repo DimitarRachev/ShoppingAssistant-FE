@@ -369,10 +369,48 @@ export function PricesPage() {
 
       {optimizeData && optimizeData.optimizedBasket.savings === 0 && (
         <Card>
-          <CardContent className="p-6">
-            <p className="text-center text-gray-600 dark:text-gray-400">
-              Няма по-изгоден вариант от няколко магазина за вашата кошница.
-            </p>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Store className="h-5 w-5 text-primary-600" />
+              Най-изгоден един магазин
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {optimizeData.cheapestSingleStore.store.nameBg}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {getTotalItems()} продукта
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-primary-600">
+                  {formatPrice(optimizeData.cheapestSingleStore.total)}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {optimizeData.cheapestSingleStore.items.map((item, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between text-sm py-2 border-t border-gray-100 dark:border-gray-800"
+                >
+                  <div className="flex-1">
+                    <p className="text-gray-900 dark:text-white font-medium">
+                      {getProductName(item.productId)}
+                    </p>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs">
+                      {item.quantity} x {formatPrice(item.unitPrice)}
+                    </p>
+                  </div>
+                  <span className="text-gray-900 dark:text-white font-semibold">
+                    {formatPrice(item.totalPrice)}
+                  </span>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
